@@ -1,0 +1,11 @@
+appsettings.json
+appsettings.Development.json
+bin/
+Migrations/
+obj/
+Properties/
+wwwroot/
+japantune.csproj
+japantune.csproj.user
+japantune.sln
+.vs/
