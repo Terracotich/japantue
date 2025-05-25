@@ -1,5 +1,6 @@
 ﻿using japantune.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 
 namespace japantune.Controllers
@@ -7,13 +8,14 @@ namespace japantune.Controllers
     public class MaterialController : Controller
     {
         private readonly JapanTuneContext _context;
+        private readonly ILogger<MaterialController> _logger;
 
-        public MaterialController(JapanTuneContext context)
+        public MaterialController(JapanTuneContext context, ILogger<MaterialController> logger)
         {
             _context = context;
+            _logger = logger;
         }
 
-        // GET: Materials
         public async Task<IActionResult> Index()
         {
             var materials = await _context.Materials
@@ -45,74 +47,101 @@ namespace japantune.Controllers
         // GET: Materials/Create
         public IActionResult Create()
         {
-            ViewBag.Suppliers = _context.Suppliers.ToList();
+            ViewBag.Suppliers = new SelectList(_context.Suppliers, "Id", "Title"); // Преобразуем в SelectList
             return View();
         }
 
-        // POST: Materials/Create
+        // POST: Materials/Create (теперь с параметрами)
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,Title,Price,Quantity,SupplierId")] Material material)
+        public async Task<IActionResult> Create(string title, string price, string quantity, string supplierId)
         {
-            if (ModelState.IsValid)
+            try
             {
+                // Валидация
+                if (string.IsNullOrEmpty(title) ||
+                    !decimal.TryParse(price, out decimal parsedPrice) ||
+                    !int.TryParse(quantity, out int parsedQuantity) ||
+                    !int.TryParse(supplierId, out int parsedSupplierId))
+                {
+                    ViewBag.Suppliers = new SelectList(_context.Suppliers, "Id", "Title"); // Добавляем SelectList
+                    ModelState.AddModelError("", "Invalid input data.");
+                    return View();
+                }
+
+                var material = new Material
+                {
+                    Title = title,
+                    Price = (int)parsedPrice,
+                    Quantity = parsedQuantity,
+                    SupplierId = parsedSupplierId
+                };
+
                 _context.Add(material);
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
-            ViewBag.Suppliers = _context.Suppliers.ToList();
-            return View(material);
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating material");
+                ViewBag.Suppliers = new SelectList(_context.Suppliers, "Id", "Title"); // Добавляем SelectList
+                TempData["ErrorMessage"] = "Error creating material.";
+                return View();
+            }
         }
 
         // GET: Materials/Edit/5
         public async Task<IActionResult> Edit(int? id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
+            if (id == null) return NotFound();
 
             var material = await _context.Materials.FindAsync(id);
-            if (material == null)
-            {
-                return NotFound();
-            }
-            ViewBag.Suppliers = _context.Suppliers.ToList();
+            if (material == null) return NotFound();
+
+            ViewBag.Suppliers = new SelectList(_context.Suppliers, "Id", "Title"); // Используем SelectList
             return View(material);
         }
 
-        // POST: Materials/Edit/5
+        // POST: Materials/Edit/5 (тоже параметры)
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,Title,Price,Quantity,SupplierId")] Material material)
+        public async Task<IActionResult> Edit(int id, string title, string price, string quantity, string supplierId)
         {
-            if (id != material.Id)
+            try
             {
-                return NotFound();
-            }
+                if (!decimal.TryParse(price, out decimal parsedPrice) ||
+                    !int.TryParse(quantity, out int parsedQuantity) ||
+                    !int.TryParse(supplierId, out int parsedSupplierId) ||
+                    parsedPrice <= 0 || parsedQuantity < 0 || parsedSupplierId <= 0)
+                {
+                    ModelState.AddModelError("", "Invalid input data.");
+                    ViewBag.Suppliers = _context.Suppliers.ToList();
+                    return RedirectToAction(nameof(Edit), new { id });
+                }
 
-            if (ModelState.IsValid)
-            {
-                try
+                var material = await _context.Materials.FindAsync(id);
+                if (material == null)
                 {
-                    _context.Update(material);
-                    await _context.SaveChangesAsync();
+                    return NotFound();
                 }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!MaterialExists(material.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
+
+                // Обновляем поля
+                material.Title = title;
+                material.Price = (int)parsedPrice;
+                material.Quantity = parsedQuantity;
+                material.SupplierId = parsedSupplierId;
+
+                _context.Update(material);
+                await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
-            ViewBag.Suppliers = _context.Suppliers.ToList();
-            return View(material);
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating material");
+                TempData["ErrorMessage"] = "Error updating material.";
+                ViewBag.Suppliers = _context.Suppliers.ToList();
+                return RedirectToAction(nameof(Edit), new { id });
+            }
         }
 
         // GET: Materials/Delete/5
