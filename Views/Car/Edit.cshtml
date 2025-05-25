@@ -13,30 +13,42 @@
         <form asp-action="Edit">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
             <input type="hidden" asp-for="Id" />
+
             <div class="form-group">
                 <label asp-for="Mark" class="control-label"></label>
-                <input asp-for="Mark" class="form-control" />
+                <input asp-for="Mark" class="form-control" required />
                 <span asp-validation-for="Mark" class="text-danger"></span>
             </div>
+
             <div class="form-group">
                 <label asp-for="Model" class="control-label"></label>
-                <input asp-for="Model" class="form-control" />
+                <input asp-for="Model" class="form-control" required />
                 <span asp-validation-for="Model" class="text-danger"></span>
             </div>
+
             <div class="form-group">
-                <label asp-for="ReleaseDate" class="control-label"></label>
-                <input asp-for="ReleaseDate" class="form-control" />
+                <label asp-for="ReleaseDate" class="control-label">Год выпуска</label>
+                <input asp-for="ReleaseDate" class="form-control"
+                       type="number"
+                       min="1900"
+                       max="@(DateTime.Now.Year + 1)" />
                 <span asp-validation-for="ReleaseDate" class="text-danger"></span>
             </div>
+
             <div class="form-group">
                 <label asp-for="LicensePlate" class="control-label"></label>
-                <input asp-for="LicensePlate" class="form-control" />
+                <input asp-for="LicensePlate" class="form-control" required />
                 <span asp-validation-for="LicensePlate" class="text-danger"></span>
             </div>
+
             <div class="form-group">
                 <label asp-for="UserId" class="control-label">Owner</label>
-                <select asp-for="UserId" class="form-control" asp-items="ViewBag.Users"></select>
+                <select asp-for="UserId" class="form-control" asp-items="ViewBag.Users" required>
+                    <option value="">-- Select Owner --</option>
+                </select>
+                <span asp-validation-for="UserId" class="text-danger"></span>
             </div>
+
             <div class="form-group">
                 <input type="submit" value="Save" class="btn btn-primary" />
             </div>

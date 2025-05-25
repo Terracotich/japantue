@@ -1,16 +1,20 @@
 ﻿using japantune.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace japantune.Controllers
 {
     public class CarController : Controller
     {
         private readonly JapanTuneContext _context;
+        private readonly ILogger<CarController> _logger;
 
-        public CarController(JapanTuneContext context)
+        public CarController(JapanTuneContext context, ILogger<CarController> logger)
         {
             _context = context;
+            _logger = logger;
         }
 
         // GET: Cars
@@ -45,23 +49,47 @@ namespace japantune.Controllers
         // GET: Cars/Create
         public IActionResult Create()
         {
-            ViewBag.Users = _context.Users.ToList();
-            return View();
+            try
+            {
+                // Убедимся, что есть пользователи в базе
+                if (!_context.Users.Any())
+                {
+                    TempData["ErrorMessage"] = "No users available. Please create users first.";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                ViewBag.Users = new SelectList(_context.Users.Select(u => new
+                {
+                    Id = u.Id,
+                    FullName = $"{u.FirstName} {u.SurName}"
+                }), "Id", "FullName");
+
+                return View();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in Create GET");
+                TempData["ErrorMessage"] = "An error occurred while loading the form.";
+                return RedirectToAction(nameof(Index));
+            }
         }
 
         // POST: Cars/Create
         [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,Mark,Model,ReleaseDate,LicensePlate,UserId")] Car car)
+        public async Task<IActionResult> Create(string mark, string model, int releaseDate, string licensePlate, int userId)
         {
-            if (ModelState.IsValid)
+            var car = new Car
             {
-                _context.Add(car);
-                await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
-            }
-            ViewBag.Users = _context.Users.ToList();
-            return View(car);
+                Mark = mark,
+                Model = model,
+                ReleaseDate = releaseDate,
+                LicensePlate = licensePlate,
+                UserId = userId
+            };
+
+            _context.Add(car);
+            await _context.SaveChangesAsync();
+            return RedirectToAction(nameof(Index));
         }
 
         // GET: Cars/Edit/5
@@ -77,14 +105,22 @@ namespace japantune.Controllers
             {
                 return NotFound();
             }
-            ViewBag.Users = _context.Users.ToList();
+
+            // Загружаем список пользователей
+            ViewBag.Users = new SelectList(
+                _context.Users.Select(u => new {
+                    Id = u.Id,
+                    FullName = $"{u.FirstName} {u.SurName}"
+                }),
+                "Id", "FullName", car.UserId);
+
             return View(car);
         }
 
         // POST: Cars/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,Mark,Model,ReleaseDate,LicensePlate,UserId")] Car car)
+        public async Task<IActionResult> Edit(int id, Car car)
         {
             if (id != car.Id)
             {
@@ -97,6 +133,7 @@ namespace japantune.Controllers
                 {
                     _context.Update(car);
                     await _context.SaveChangesAsync();
+                    return RedirectToAction(nameof(Index));
                 }
                 catch (DbUpdateConcurrencyException)
                 {
@@ -109,9 +146,16 @@ namespace japantune.Controllers
                         throw;
                     }
                 }
-                return RedirectToAction(nameof(Index));
             }
-            ViewBag.Users = _context.Users.ToList();
+
+            // Если есть ошибки, снова загружаем список пользователей
+            ViewBag.Users = new SelectList(
+                _context.Users.Select(u => new {
+                    Id = u.Id,
+                    FullName = $"{u.FirstName} {u.SurName}"
+                }),
+                "Id", "FullName", car.UserId);
+
             return View(car);
         }
 
@@ -141,9 +185,22 @@ namespace japantune.Controllers
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var car = await _context.Cars.FindAsync(id);
-            _context.Cars.Remove(car);
-            await _context.SaveChangesAsync();
-            return RedirectToAction(nameof(Index));
+            if (car == null)
+            {
+                return NotFound();
+            }
+
+            try
+            {
+                _context.Cars.Remove(car);
+                await _context.SaveChangesAsync();
+                return RedirectToAction(nameof(Index));
+            }
+            catch (DbUpdateException ex)
+            {
+                _logger.LogError(ex, "Error deleting car");
+                return RedirectToAction(nameof(Delete), new { id, saveChangesError = true });
+            }
         }
 
         private bool CarExists(int id)
