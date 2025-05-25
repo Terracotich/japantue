@@ -7,10 +7,12 @@ namespace japantune.Controllers
     public class SupplierController : Controller
     {
         private readonly JapanTuneContext _context;
+        private readonly ILogger<SupplierController> _logger;
 
-        public SupplierController(JapanTuneContext context)
+        public SupplierController(JapanTuneContext context, ILogger<SupplierController> logger)
         {
             _context = context;
+            _logger = logger;
         }
 
         // GET: Suppliers
@@ -47,15 +49,33 @@ namespace japantune.Controllers
         // POST: Suppliers/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,Title,Country")] Supplier supplier)
+        public async Task<IActionResult> Create(string title, string country)
         {
-            if (ModelState.IsValid)
+            try
             {
+                // Валидация вручную (если нужно)
+                if (string.IsNullOrEmpty(title) || string.IsNullOrEmpty(country))
+                {
+                    ModelState.AddModelError("", "Title and Country are required.");
+                    return View();
+                }
+
+                var supplier = new Supplier
+                {
+                    Title = title,
+                    Country = country
+                };
+
                 _context.Add(supplier);
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
-            return View(supplier);
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating supplier");
+                TempData["ErrorMessage"] = "Error creating supplier.";
+                return View();
+            }
         }
 
         // GET: Suppliers/Edit/5
@@ -74,37 +94,33 @@ namespace japantune.Controllers
             return View(supplier);
         }
 
-        // POST: Suppliers/Edit/5
+        // POST: Suppliers/Edit/5 (тоже параметры вместо модели)
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,Title,Country")] Supplier supplier)
+        public async Task<IActionResult> Edit(int id, string title, string country)
         {
-            if (id != supplier.Id)
+            try
             {
-                return NotFound();
-            }
+                var supplier = await _context.Suppliers.FindAsync(id);
+                if (supplier == null)
+                {
+                    return NotFound();
+                }
 
-            if (ModelState.IsValid)
-            {
-                try
-                {
-                    _context.Update(supplier);
-                    await _context.SaveChangesAsync();
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!SupplierExists(supplier.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
+                // Обновляем поля
+                supplier.Title = title;
+                supplier.Country = country;
+
+                _context.Update(supplier);
+                await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
-            return View(supplier);
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating supplier");
+                TempData["ErrorMessage"] = "Error updating supplier.";
+                return RedirectToAction(nameof(Edit), new { id });
+            }
         }
 
         // GET: Suppliers/Delete/5
