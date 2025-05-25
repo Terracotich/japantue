@@ -1,5 +1,4 @@
 ﻿@model japantune.Models.Car
-
 @{
     ViewData["Title"] = "Edit Car";
 }
@@ -10,43 +9,41 @@
 <hr />
 <div class="row">
     <div class="col-md-4">
-        <form asp-action="Edit">
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-            <input type="hidden" asp-for="Id" />
+        <form asp-action="Edit" method="post">
+            <input type="hidden" name="id" value="@Model.Id" />
 
             <div class="form-group">
-                <label asp-for="Mark" class="control-label"></label>
-                <input asp-for="Mark" class="form-control" required />
-                <span asp-validation-for="Mark" class="text-danger"></span>
+                <label class="control-label">Mark</label>
+                <input name="mark" class="form-control" value="@Model.Mark" required />
             </div>
 
             <div class="form-group">
-                <label asp-for="Model" class="control-label"></label>
-                <input asp-for="Model" class="form-control" required />
-                <span asp-validation-for="Model" class="text-danger"></span>
+                <label class="control-label">Model</label>
+                <input name="model" class="form-control" value="@Model.Model" required />
             </div>
 
             <div class="form-group">
-                <label asp-for="ReleaseDate" class="control-label">Год выпуска</label>
-                <input asp-for="ReleaseDate" class="form-control"
-                       type="number"
-                       min="1900"
-                       max="@(DateTime.Now.Year + 1)" />
-                <span asp-validation-for="ReleaseDate" class="text-danger"></span>
+                <label class="control-label">Release Year</label>
+                <input name="releaseDate" class="form-control"
+                       type="number" min="1900" max="@(DateTime.Now.Year + 1)"
+                       value="@Model.ReleaseDate" required />
             </div>
 
             <div class="form-group">
-                <label asp-for="LicensePlate" class="control-label"></label>
-                <input asp-for="LicensePlate" class="form-control" required />
-                <span asp-validation-for="LicensePlate" class="text-danger"></span>
+                <label class="control-label">License Plate</label>
+                <input name="licensePlate" class="form-control" value="@Model.LicensePlate" />
             </div>
 
             <div class="form-group">
-                <label asp-for="UserId" class="control-label">Owner</label>
-                <select asp-for="UserId" class="form-control" asp-items="ViewBag.Users" required>
-                    <option value="">-- Select Owner --</option>
+                <label class="control-label">Owner</label>
+                <select name="userId" class="form-control" required>
+                    @foreach (var user in ViewBag.Users as SelectList)
+                    {
+                        <option value="@user.Value" selected="@(user.Value == Model.UserId.ToString())">
+                            @user.Text
+                        </option>
+                    }
                 </select>
-                <span asp-validation-for="UserId" class="text-danger"></span>
             </div>
 
             <div class="form-group">
@@ -59,9 +56,3 @@
 <div>
     <a asp-action="Index">Back to List</a>
 </div>
-
-@section Scripts {
-    @{
-        await Html.RenderPartialAsync("_ValidationScriptsPartial");
-    }
-}

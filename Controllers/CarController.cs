@@ -93,6 +93,7 @@ namespace japantune.Controllers
         }
 
         // GET: Cars/Edit/5
+        [HttpGet]
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null)
@@ -112,51 +113,42 @@ namespace japantune.Controllers
                     Id = u.Id,
                     FullName = $"{u.FirstName} {u.SurName}"
                 }),
-                "Id", "FullName", car.UserId);
+                "Id", "FullName");
 
             return View(car);
         }
 
         // POST: Cars/Edit/5
         [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, Car car)
+        public async Task<IActionResult> Edit(int id, string mark, string model, int releaseDate, string licensePlate, int userId)
         {
-            if (id != car.Id)
+            try
             {
-                return NotFound();
-            }
+                // Находим существующую машину
+                var existingCar = await _context.Cars.FindAsync(id);
+                if (existingCar == null)
+                {
+                    return NotFound();
+                }
 
-            if (ModelState.IsValid)
+                // Обновляем поля
+                existingCar.Mark = mark;
+                existingCar.Model = model;
+                existingCar.ReleaseDate = releaseDate;
+                existingCar.LicensePlate = licensePlate;
+                existingCar.UserId = userId;
+
+                _context.Update(existingCar);
+                await _context.SaveChangesAsync();
+
+                return RedirectToAction(nameof(Index));
+            }
+            catch (Exception ex)
             {
-                try
-                {
-                    _context.Update(car);
-                    await _context.SaveChangesAsync();
-                    return RedirectToAction(nameof(Index));
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!CarExists(car.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
+                _logger.LogError(ex, "Error editing car");
+                TempData["ErrorMessage"] = "Произошла ошибка при редактировании";
+                return RedirectToAction(nameof(Edit), new { id });
             }
-
-            // Если есть ошибки, снова загружаем список пользователей
-            ViewBag.Users = new SelectList(
-                _context.Users.Select(u => new {
-                    Id = u.Id,
-                    FullName = $"{u.FirstName} {u.SurName}"
-                }),
-                "Id", "FullName", car.UserId);
-
-            return View(car);
         }
 
         // GET: Cars/Delete/5
