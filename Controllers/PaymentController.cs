@@ -16,76 +16,68 @@ namespace japantune.Controllers
             _logger = logger;
         }
 
-        // GET: Payments
+        // GET: Payments (без изменений)
         public async Task<IActionResult> Index()
         {
-            var payments = await _context.Payments
+            return View(await _context.Payments
                 .Include(p => p.User)
                 .Include(p => p.Orders)
-                .ToListAsync();
-            return View(payments);
-        }
-
-        // GET: Payments/Details/5
-        public async Task<IActionResult> Details(int? id)
-        {
-            if (id == null) return NotFound();
-
-            var payment = await _context.Payments
-                .Include(p => p.User)
-                .Include(p => p.Orders)
-                .FirstOrDefaultAsync(m => m.Id == id);
-
-            if (payment == null) return NotFound();
-
-            return View(payment);
+                .ToListAsync());
         }
 
         // GET: Payments/Create
         public IActionResult Create()
         {
-            ViewBag.Users = _context.Users
-                .Select(u => new SelectListItem
-                {
-                    Value = u.Id.ToString(),
-                    Text = $"{u.FirstName} {u.SurName}"
-                })
-                .ToList();
+            ViewBag.Users = new SelectList(
+                _context.Users.Select(u => new {
+                    Id = u.Id,
+                    FullName = $"{u.FirstName} {u.SurName}"
+                }),
+                "Id", "FullName");
             return View();
         }
 
+        // POST: Payments/Create (с параметрами)
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(Payment payment)
+        public async Task<IActionResult> Create(
+            string price,
+            string payMethod,
+            string paymentDate,
+            int userId)
         {
             try
             {
-                if (ModelState.IsValid)
+                // Валидация
+                if (!decimal.TryParse(price, out decimal parsedPrice) ||
+                    string.IsNullOrEmpty(payMethod) ||
+                    !DateOnly.TryParse(paymentDate, out DateOnly parsedDate) ||
+                    userId <= 0)
                 {
-                    // Преобразуем DateTime.Now в DateOnly
-                    payment.PaymentDate = DateOnly.FromDateTime(DateTime.Now);
-
-                    _context.Add(payment);
-                    await _context.SaveChangesAsync();
-                    return RedirectToAction(nameof(Index));
+                    ModelState.AddModelError("", "Invalid input data.");
+                    ViewBag.Users = GetUsersSelectList();
+                    return View();
                 }
+
+                var payment = new Payment
+                {
+                    Price = (int)parsedPrice,
+                    PayMethod = payMethod,
+                    PaymentDate = parsedDate,
+                    UserId = userId
+                };
+
+                _context.Add(payment);
+                await _context.SaveChangesAsync();
+                return RedirectToAction(nameof(Index));
             }
-            catch (DbUpdateException ex)
+            catch (Exception ex)
             {
                 _logger.LogError(ex, "Error creating payment");
-                ModelState.AddModelError("", "Unable to save changes. Try again, and if the problem persists see your system administrator.");
+                ViewBag.Users = GetUsersSelectList();
+                TempData["ErrorMessage"] = "Error creating payment.";
+                return View();
             }
-
-            // Заполняем список пользователей для выпадающего списка
-            ViewBag.Users = _context.Users
-                .Select(u => new SelectListItem
-                {
-                    Value = u.Id.ToString(),
-                    Text = $"{u.FirstName} {u.SurName}"
-                })
-                .ToList();
-
-            return View(payment);
         }
 
         // GET: Payments/Edit/5
@@ -96,53 +88,60 @@ namespace japantune.Controllers
             var payment = await _context.Payments.FindAsync(id);
             if (payment == null) return NotFound();
 
-            ViewBag.Users = _context.Users
-                .Select(u => new SelectListItem
-                {
-                    Value = u.Id.ToString(),
-                    Text = $"{u.FirstName} {u.SurName}",
-                    Selected = u.Id == payment.UserId
-                })
-                .ToList();
+            ViewBag.Users = new SelectList(
+                _context.Users.Select(u => new {
+                    Id = u.Id,
+                    FullName = $"{u.FirstName} {u.SurName}"
+                }),
+                "Id", "FullName", payment.UserId);
             return View(payment);
         }
 
-        // POST: Payments/Edit/5
+        // POST: Payments/Edit/5 (с параметрами)
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, Payment payment)
+        public async Task<IActionResult> Edit(
+            int id,
+            string price,
+            string payMethod,
+            string paymentDate,
+            int userId)
         {
-            if (id != payment.Id) return NotFound();
-
-            if (ModelState.IsValid)
+            try
             {
-                try
-                {
-                    _context.Update(payment);
-                    await _context.SaveChangesAsync();
-                    return RedirectToAction(nameof(Index));
-                }
-                catch (DbUpdateConcurrencyException ex)
-                {
-                    if (!PaymentExists(payment.Id))
-                    {
-                        return NotFound();
-                    }
-                    _logger.LogError(ex, "Error editing payment");
-                    ModelState.AddModelError("", "Unable to save changes. The payment was updated by another user.");
-                }
-            }
+                var payment = await _context.Payments.FindAsync(id);
+                if (payment == null) return NotFound();
 
-            ViewBag.Users = _context.Users
-                .Select(u => new SelectListItem
+                // Валидация
+                if (!decimal.TryParse(price, out decimal parsedPrice) ||
+                    string.IsNullOrEmpty(payMethod) ||
+                    !DateOnly.TryParse(paymentDate, out DateOnly parsedDate) ||
+                    userId <= 0)
                 {
-                    Value = u.Id.ToString(),
-                    Text = $"{u.FirstName} {u.SurName}",
-                    Selected = u.Id == payment.UserId
-                })
-                .ToList();
-            return View(payment);
+                    ModelState.AddModelError("", "Invalid input data.");
+                    ViewBag.Users = GetUsersSelectList(userId);
+                    return View(payment);
+                }
+
+                // Обновление полей
+                payment.Price = (int)parsedPrice;
+                payment.PayMethod = payMethod;
+                payment.PaymentDate = parsedDate;
+                payment.UserId = userId;
+
+                _context.Update(payment);
+                await _context.SaveChangesAsync();
+                return RedirectToAction(nameof(Index));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error editing payment");
+                ViewBag.Users = GetUsersSelectList(userId);
+                TempData["ErrorMessage"] = "Error editing payment.";
+                return RedirectToAction(nameof(Edit), new { id });
+            }
         }
+
 
         // GET: Payments/Delete/5
         public async Task<IActionResult> Delete(int? id)
@@ -194,6 +193,16 @@ namespace japantune.Controllers
                 ModelState.AddModelError("", $"Error deleting payment: {ex.Message}");
                 return RedirectToAction(nameof(Delete), new { id });
             }
+        }
+
+        private SelectList GetUsersSelectList(int? selectedUserId = null)
+        {
+            return new SelectList(
+                _context.Users.Select(u => new {
+                    Id = u.Id,
+                    FullName = $"{u.FirstName} {u.SurName}"
+                }),
+                "Id", "FullName", selectedUserId);
         }
 
         private bool PaymentExists(int id)
