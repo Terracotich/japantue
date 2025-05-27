@@ -1,5 +1,6 @@
 ﻿using japantune.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 
 namespace japantune.Controllers
@@ -7,130 +8,137 @@ namespace japantune.Controllers
     public class OrderController : Controller
     {
         private readonly JapanTuneContext _context;
+        private readonly ILogger<OrderController> _logger;
 
-        public OrderController(JapanTuneContext context)
+        public OrderController(JapanTuneContext context, ILogger<OrderController> logger)
         {
             _context = context;
+            _logger = logger;
         }
 
         // GET: Orders
         public async Task<IActionResult> Index()
         {
-            var orders = await _context.Orders
+            return View(await _context.Orders
                 .Include(o => o.User)
                 .Include(o => o.Material)
                 .Include(o => o.Payment)
                 .Include(o => o.Review)
-                .ToListAsync();
-            return View(orders);
-        }
-
-        // GET: Orders/Details/5
-        public async Task<IActionResult> Details(int? id)
-        {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
-            var order = await _context.Orders
-                .Include(o => o.User)
-                .Include(o => o.Material)
-                .Include(o => o.Payment)
-                .Include(o => o.Review)
-                .FirstOrDefaultAsync(m => m.Id == id);
-
-            if (order == null)
-            {
-                return NotFound();
-            }
-
-            return View(order);
+                .ToListAsync());
         }
 
         // GET: Orders/Create
         public IActionResult Create()
         {
-            ViewBag.Users = _context.Users.ToList();
-            ViewBag.Materials = _context.Materials.ToList();
-            ViewBag.Payments = _context.Payments.ToList();
-            ViewBag.Reviews = _context.Reviews.ToList();
+            LoadSelectLists();
             return View();
         }
 
         // POST: Orders/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,OrderDate,Status,PaymentId,UserId,MaterialId,ReviewId")] Order order)
+        public async Task<IActionResult> Create(
+            string orderDate,
+            string status,
+            int userId,
+            int materialId,
+            int paymentId,
+            int? reviewId)
         {
-            if (ModelState.IsValid)
+            try
             {
+                if (!DateOnly.TryParse(orderDate, out DateOnly parsedDate) ||
+                    string.IsNullOrEmpty(status) ||
+                    userId <= 0 ||
+                    materialId <= 0 ||
+                    paymentId <= 0)
+                {
+                    ModelState.AddModelError("", "Invalid input data");
+                    LoadSelectLists();
+                    return View();
+                }
+
+                var order = new Order
+                {
+                    OrderDate = parsedDate,
+                    Status = status,
+                    UserId = userId,
+                    MaterialId = materialId,
+                    PaymentId = paymentId,
+                    ReviewId = reviewId
+                };
+
                 _context.Add(order);
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
-            ViewBag.Users = _context.Users.ToList();
-            ViewBag.Materials = _context.Materials.ToList();
-            ViewBag.Payments = _context.Payments.ToList();
-            ViewBag.Reviews = _context.Reviews.ToList();
-            return View(order);
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating order");
+                LoadSelectLists();
+                TempData["ErrorMessage"] = "Error creating order";
+                return View();
+            }
         }
 
         // GET: Orders/Edit/5
         public async Task<IActionResult> Edit(int? id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
+            if (id == null) return NotFound();
 
             var order = await _context.Orders.FindAsync(id);
-            if (order == null)
-            {
-                return NotFound();
-            }
-            ViewBag.Users = _context.Users.ToList();
-            ViewBag.Materials = _context.Materials.ToList();
-            ViewBag.Payments = _context.Payments.ToList();
-            ViewBag.Reviews = _context.Reviews.ToList();
+            if (order == null) return NotFound();
+
+            LoadSelectLists(order.UserId, order.MaterialId, order.PaymentId, order.ReviewId);
             return View(order);
         }
 
         // POST: Orders/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,OrderDate,Status,PaymentId,UserId,MaterialId,ReviewId")] Order order)
+        public async Task<IActionResult> Edit(
+            int id,
+            string orderDate,
+            string status,
+            int userId,
+            int materialId,
+            int paymentId,
+            int? reviewId)
         {
-            if (id != order.Id)
+            try
             {
-                return NotFound();
-            }
+                var order = await _context.Orders.FindAsync(id);
+                if (order == null) return NotFound();
 
-            if (ModelState.IsValid)
-            {
-                try
+                if (!DateOnly.TryParse(orderDate, out DateOnly parsedDate) ||
+                    string.IsNullOrEmpty(status) ||
+                    userId <= 0 ||
+                    materialId <= 0 ||
+                    paymentId <= 0)
                 {
-                    _context.Update(order);
-                    await _context.SaveChangesAsync();
+                    ModelState.AddModelError("", "Invalid input data");
+                    LoadSelectLists(userId, materialId, paymentId, reviewId);
+                    return View(order);
                 }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!OrderExists(order.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
+
+                order.OrderDate = parsedDate;
+                order.Status = status;
+                order.UserId = userId;
+                order.MaterialId = materialId;
+                order.PaymentId = paymentId;
+                order.ReviewId = reviewId;
+
+                _context.Update(order);
+                await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
-            ViewBag.Users = _context.Users.ToList();
-            ViewBag.Materials = _context.Materials.ToList();
-            ViewBag.Payments = _context.Payments.ToList();
-            ViewBag.Reviews = _context.Reviews.ToList();
-            return View(order);
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error editing order");
+                LoadSelectLists(userId, materialId, paymentId, reviewId);
+                TempData["ErrorMessage"] = "Error editing order";
+                return RedirectToAction(nameof(Edit), new { id });
+            }
         }
 
         // GET: Orders/Delete/5
@@ -165,6 +173,29 @@ namespace japantune.Controllers
             _context.Orders.Remove(order);
             await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
+        }
+
+        private void LoadSelectLists(
+            int? selectedUserId = null,
+            int? selectedMaterialId = null,
+            int? selectedPaymentId = null,
+            int? selectedReviewId = null)
+        {
+            ViewBag.Users = new SelectList(
+                _context.Users.Select(u => new {
+                    Id = u.Id,
+                    FullName = $"{u.FirstName} {u.SurName}"
+                }),
+                "Id", "FullName", selectedUserId);
+
+            ViewBag.Materials = new SelectList(
+                _context.Materials, "Id", "Title", selectedMaterialId);
+
+            ViewBag.Payments = new SelectList(
+                _context.Payments, "Id", "PayMethod", selectedPaymentId);
+
+            ViewBag.Reviews = new SelectList(
+                _context.Reviews, "Id", "Title", selectedReviewId);
         }
 
         private bool OrderExists(int id)
