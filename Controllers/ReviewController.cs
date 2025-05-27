@@ -1,5 +1,6 @@
 ﻿using japantune.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 
 namespace japantune.Controllers
@@ -7,112 +8,127 @@ namespace japantune.Controllers
     public class ReviewController : Controller
     {
         private readonly JapanTuneContext _context;
+        private readonly ILogger<ReviewController> _logger;
 
-        public ReviewController(JapanTuneContext context)
+        public ReviewController(JapanTuneContext context, ILogger<ReviewController> logger)
         {
             _context = context;
+            _logger = logger;
         }
 
-        // GET: Reviews
+        // GET: Reviews (без изменений)
         public async Task<IActionResult> Index()
         {
-            var reviews = await _context.Reviews
+            return View(await _context.Reviews
                 .Include(r => r.User)
-                .ToListAsync();
-            return View(reviews);
-        }
-
-        // GET: Reviews/Details/5
-        public async Task<IActionResult> Details(int? id)
-        {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
-            var review = await _context.Reviews
-                .Include(r => r.User)
-                .FirstOrDefaultAsync(m => m.Id == id);
-
-            if (review == null)
-            {
-                return NotFound();
-            }
-
-            return View(review);
+                .ToListAsync());
         }
 
         // GET: Reviews/Create
         public IActionResult Create()
         {
-            ViewBag.Users = _context.Users.ToList();
+            ViewBag.Users = GetUsersSelectList();
             return View();
         }
 
-        // POST: Reviews/Create
+        // POST: Reviews/Create (с параметрами)
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,Title,Rating,ReviewDate,UserId")] Review review)
+        public async Task<IActionResult> Create(
+            string title,
+            int rating,
+            string reviewDate,
+            int userId)
         {
-            if (ModelState.IsValid)
+            try
             {
+                // Валидация
+                if (string.IsNullOrEmpty(title) ||
+                    !DateOnly.TryParse(reviewDate, out DateOnly parsedDate) ||
+                    userId <= 0 ||
+                    rating < 1 || rating > 5)
+                {
+                    ModelState.AddModelError("", "Invalid input data");
+                    ViewBag.Users = GetUsersSelectList();
+                    return View();
+                }
+
+                var review = new Review
+                {
+                    Title = title,
+                    Rating = (short)rating,
+                    ReviewDate = parsedDate,
+                    UserId = userId
+                };
+
                 _context.Add(review);
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
-            ViewBag.Users = _context.Users.ToList();
-            return View(review);
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating review");
+                ViewBag.Users = GetUsersSelectList();
+                TempData["ErrorMessage"] = "Error creating review";
+                return View();
+            }
         }
 
         // GET: Reviews/Edit/5
         public async Task<IActionResult> Edit(int? id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
+            if (id == null) return NotFound();
 
             var review = await _context.Reviews.FindAsync(id);
-            if (review == null)
-            {
-                return NotFound();
-            }
-            ViewBag.Users = _context.Users.ToList();
+            if (review == null) return NotFound();
+
+            ViewBag.Users = GetUsersSelectList(review.UserId);
             return View(review);
         }
 
-        // POST: Reviews/Edit/5
+        // POST: Reviews/Edit/5 (с параметрами)
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,Title,Rating,ReviewDate,UserId")] Review review)
+        public async Task<IActionResult> Edit(
+            int id,
+            string title,
+            int rating,
+            string reviewDate,
+            int userId)
         {
-            if (id != review.Id)
+            try
             {
-                return NotFound();
-            }
+                var review = await _context.Reviews.FindAsync(id);
+                if (review == null) return NotFound();
 
-            if (ModelState.IsValid)
-            {
-                try
+                // Валидация
+                if (string.IsNullOrEmpty(title) ||
+                    !DateOnly.TryParse(reviewDate, out DateOnly parsedDate) ||
+                    userId <= 0 ||
+                    rating < 1 || rating > 5)
                 {
-                    _context.Update(review);
-                    await _context.SaveChangesAsync();
+                    ModelState.AddModelError("", "Invalid input data");
+                    ViewBag.Users = GetUsersSelectList(userId);
+                    return View(review);
                 }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!ReviewExists(review.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
+
+                // Обновление полей
+                review.Title = title;
+                review.Rating = (short)rating;
+                review.ReviewDate = parsedDate;
+                review.UserId = userId;
+
+                _context.Update(review);
+                await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
-            ViewBag.Users = _context.Users.ToList();
-            return View(review);
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error editing review");
+                ViewBag.Users = GetUsersSelectList(userId);
+                TempData["ErrorMessage"] = "Error editing review";
+                return RedirectToAction(nameof(Edit), new { id });
+            }
         }
 
         // GET: Reviews/Delete/5
@@ -149,6 +165,16 @@ namespace japantune.Controllers
         private bool ReviewExists(int id)
         {
             return _context.Reviews.Any(e => e.Id == id);
+        }
+
+        private SelectList GetUsersSelectList(int? selectedUserId = null)
+        {
+            return new SelectList(
+                _context.Users.Select(u => new {
+                    Id = u.Id,
+                    FullName = $"{u.FirstName} {u.SurName}"
+                }),
+                "Id", "FullName", selectedUserId);
         }
     }
 }
