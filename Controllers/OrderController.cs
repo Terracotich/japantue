@@ -16,7 +16,6 @@ namespace japantune.Controllers
             _logger = logger;
         }
 
-        // GET: Orders
         public async Task<IActionResult> Index()
         {
             return View(await _context.Orders
@@ -27,14 +26,12 @@ namespace japantune.Controllers
                 .ToListAsync());
         }
 
-        // GET: Orders/Create
         public IActionResult Create()
         {
             LoadSelectLists();
             return View();
         }
 
-        // POST: Orders/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(
@@ -81,7 +78,6 @@ namespace japantune.Controllers
             }
         }
 
-        // GET: Orders/Edit/5
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null) return NotFound();
@@ -93,7 +89,6 @@ namespace japantune.Controllers
             return View(order);
         }
 
-        // POST: Orders/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(
@@ -141,7 +136,6 @@ namespace japantune.Controllers
             }
         }
 
-        // GET: Orders/Delete/5
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null)
@@ -164,7 +158,6 @@ namespace japantune.Controllers
             return View(order);
         }
 
-        // POST: Orders/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)

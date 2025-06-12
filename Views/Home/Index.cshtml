@@ -1,8 +1,20 @@
 ﻿@{
-    ViewData["Title"] = "Home Page";
+    ViewData["Title"] = "Главная страница";
 }
 
 <div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+    <h1 class="display-4">Добро пожаловать в JapanTune</h1>
+
+    @if (User.Identity.IsAuthenticated)
+    {
+        <p>Вы вошли как @User.Identity.Name</p>
+        <a class="btn btn-danger" asp-action="Logout" asp-controller="Home">Выйти</a>
+    }
+    else
+    {
+        <div class="mt-4">
+            <a class="btn btn-primary" asp-action="Login" asp-controller="Home">Войти</a>
+            <a class="btn btn-success" asp-action="SignUp" asp-controller="Home">Зарегистрироваться</a>
+        </div>
+    }
 </div>

@@ -16,7 +16,6 @@ namespace japantune.Controllers
             _logger = logger;
         }
 
-        // GET: Payments (без изменений)
         public async Task<IActionResult> Index()
         {
             return View(await _context.Payments
@@ -25,7 +24,6 @@ namespace japantune.Controllers
                 .ToListAsync());
         }
 
-        // GET: Payments/Create
         public IActionResult Create()
         {
             ViewBag.Users = new SelectList(
@@ -37,7 +35,6 @@ namespace japantune.Controllers
             return View();
         }
 
-        // POST: Payments/Create (с параметрами)
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(
@@ -48,7 +45,6 @@ namespace japantune.Controllers
         {
             try
             {
-                // Валидация
                 if (!decimal.TryParse(price, out decimal parsedPrice) ||
                     string.IsNullOrEmpty(payMethod) ||
                     !DateOnly.TryParse(paymentDate, out DateOnly parsedDate) ||
@@ -80,7 +76,6 @@ namespace japantune.Controllers
             }
         }
 
-        // GET: Payments/Edit/5
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null) return NotFound();
@@ -97,7 +92,6 @@ namespace japantune.Controllers
             return View(payment);
         }
 
-        // POST: Payments/Edit/5 (с параметрами)
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(
@@ -112,7 +106,6 @@ namespace japantune.Controllers
                 var payment = await _context.Payments.FindAsync(id);
                 if (payment == null) return NotFound();
 
-                // Валидация
                 if (!decimal.TryParse(price, out decimal parsedPrice) ||
                     string.IsNullOrEmpty(payMethod) ||
                     !DateOnly.TryParse(paymentDate, out DateOnly parsedDate) ||
@@ -123,7 +116,6 @@ namespace japantune.Controllers
                     return View(payment);
                 }
 
-                // Обновление полей
                 payment.Price = (int)parsedPrice;
                 payment.PayMethod = payMethod;
                 payment.PaymentDate = parsedDate;
@@ -143,7 +135,6 @@ namespace japantune.Controllers
         }
 
 
-        // GET: Payments/Delete/5
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null) return NotFound();
@@ -159,7 +150,6 @@ namespace japantune.Controllers
             return View(payment);
         }
 
-        // POST: Payments/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
@@ -168,13 +158,11 @@ namespace japantune.Controllers
 
             try
             {
-                // Удаляем связанные заказы
                 var orders = await _context.Orders
                     .Where(o => o.PaymentId == id)
                     .ToListAsync();
                 _context.Orders.RemoveRange(orders);
 
-                // Удаляем платеж
                 var payment = await _context.Payments.FindAsync(id);
                 if (payment != null)
                 {

@@ -13,13 +13,11 @@ namespace japantune.Controllers
             _context = context;
         }
 
-        // GET: Roles
         public async Task<IActionResult> Index()
         {
             return View(await _context.Roles.ToListAsync());
         }
 
-        // GET: Roles/Details/5
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null)
@@ -38,13 +36,11 @@ namespace japantune.Controllers
             return View(role);
         }
 
-        // GET: Roles/Create
         public IActionResult Create()
         {
             return View();
         }
 
-        // POST: Roles/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Id,Title")] Role role)
@@ -58,7 +54,6 @@ namespace japantune.Controllers
             return View(role);
         }
 
-        // GET: Roles/Edit/5
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null)
@@ -74,7 +69,6 @@ namespace japantune.Controllers
             return View(role);
         }
 
-        // POST: Roles/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, [Bind("Id,Title")] Role role)
@@ -107,7 +101,6 @@ namespace japantune.Controllers
             return View(role);
         }
 
-        // GET: Roles/Delete/5
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null)
@@ -116,7 +109,7 @@ namespace japantune.Controllers
             }
 
             var role = await _context.Roles
-                .Include(r => r.Users) // Проверка на связанных пользователей
+                .Include(r => r.Users)
                 .FirstOrDefaultAsync(m => m.Id == id);
 
             if (role == null)
@@ -133,7 +126,6 @@ namespace japantune.Controllers
             return View(role);
         }
 
-        // POST: Roles/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)

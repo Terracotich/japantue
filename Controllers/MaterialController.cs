@@ -24,7 +24,6 @@ namespace japantune.Controllers
             return View(materials);
         }
 
-        // GET: Materials/Details/5
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null)
@@ -44,27 +43,24 @@ namespace japantune.Controllers
             return View(material);
         }
 
-        // GET: Materials/Create
         public IActionResult Create()
         {
-            ViewBag.Suppliers = new SelectList(_context.Suppliers, "Id", "Title"); // Преобразуем в SelectList
+            ViewBag.Suppliers = new SelectList(_context.Suppliers, "Id", "Title"); 
             return View();
         }
 
-        // POST: Materials/Create (теперь с параметрами)
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(string title, string price, string quantity, string supplierId)
         {
             try
             {
-                // Валидация
                 if (string.IsNullOrEmpty(title) ||
                     !decimal.TryParse(price, out decimal parsedPrice) ||
                     !int.TryParse(quantity, out int parsedQuantity) ||
                     !int.TryParse(supplierId, out int parsedSupplierId))
                 {
-                    ViewBag.Suppliers = new SelectList(_context.Suppliers, "Id", "Title"); // Добавляем SelectList
+                    ViewBag.Suppliers = new SelectList(_context.Suppliers, "Id", "Title"); 
                     ModelState.AddModelError("", "Invalid input data.");
                     return View();
                 }
@@ -84,13 +80,12 @@ namespace japantune.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error creating material");
-                ViewBag.Suppliers = new SelectList(_context.Suppliers, "Id", "Title"); // Добавляем SelectList
+                ViewBag.Suppliers = new SelectList(_context.Suppliers, "Id", "Title");
                 TempData["ErrorMessage"] = "Error creating material.";
                 return View();
             }
         }
 
-        // GET: Materials/Edit/5
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null) return NotFound();
@@ -98,11 +93,10 @@ namespace japantune.Controllers
             var material = await _context.Materials.FindAsync(id);
             if (material == null) return NotFound();
 
-            ViewBag.Suppliers = new SelectList(_context.Suppliers, "Id", "Title"); // Используем SelectList
+            ViewBag.Suppliers = new SelectList(_context.Suppliers, "Id", "Title");
             return View(material);
         }
 
-        // POST: Materials/Edit/5 (тоже параметры)
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, string title, string price, string quantity, string supplierId)
@@ -125,7 +119,6 @@ namespace japantune.Controllers
                     return NotFound();
                 }
 
-                // Обновляем поля
                 material.Title = title;
                 material.Price = (int)parsedPrice;
                 material.Quantity = parsedQuantity;
@@ -144,7 +137,6 @@ namespace japantune.Controllers
             }
         }
 
-        // GET: Materials/Delete/5
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null)
@@ -164,7 +156,6 @@ namespace japantune.Controllers
             return View(material);
         }
 
-        // POST: Materials/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)

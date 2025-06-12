@@ -16,7 +16,6 @@ namespace japantune.Controllers
             _logger = logger;
         }
 
-        // GET: Reviews (без изменений)
         public async Task<IActionResult> Index()
         {
             return View(await _context.Reviews
@@ -24,14 +23,12 @@ namespace japantune.Controllers
                 .ToListAsync());
         }
 
-        // GET: Reviews/Create
         public IActionResult Create()
         {
             ViewBag.Users = GetUsersSelectList();
             return View();
         }
 
-        // POST: Reviews/Create (с параметрами)
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(
@@ -42,7 +39,6 @@ namespace japantune.Controllers
         {
             try
             {
-                // Валидация
                 if (string.IsNullOrEmpty(title) ||
                     !DateOnly.TryParse(reviewDate, out DateOnly parsedDate) ||
                     userId <= 0 ||
@@ -74,7 +70,6 @@ namespace japantune.Controllers
             }
         }
 
-        // GET: Reviews/Edit/5
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null) return NotFound();
@@ -86,7 +81,6 @@ namespace japantune.Controllers
             return View(review);
         }
 
-        // POST: Reviews/Edit/5 (с параметрами)
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(
@@ -101,7 +95,6 @@ namespace japantune.Controllers
                 var review = await _context.Reviews.FindAsync(id);
                 if (review == null) return NotFound();
 
-                // Валидация
                 if (string.IsNullOrEmpty(title) ||
                     !DateOnly.TryParse(reviewDate, out DateOnly parsedDate) ||
                     userId <= 0 ||
@@ -112,7 +105,6 @@ namespace japantune.Controllers
                     return View(review);
                 }
 
-                // Обновление полей
                 review.Title = title;
                 review.Rating = (short)rating;
                 review.ReviewDate = parsedDate;
@@ -131,7 +123,6 @@ namespace japantune.Controllers
             }
         }
 
-        // GET: Reviews/Delete/5
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null)
@@ -151,7 +142,6 @@ namespace japantune.Controllers
             return View(review);
         }
 
-        // POST: Reviews/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)

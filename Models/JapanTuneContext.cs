@@ -45,7 +45,7 @@ public partial class JapanTuneContext : DbContext
 
             entity.HasOne(d => d.User).WithMany(p => p.Cars)
                 .HasForeignKey(d => d.UserId)
-                .OnDelete(DeleteBehavior.Cascade) // Изменено на каскадное удаление
+                .OnDelete(DeleteBehavior.Cascade) 
                 .HasConstraintName("FK__car__user_id__5535A963");
         });
 
@@ -79,7 +79,7 @@ public partial class JapanTuneContext : DbContext
 
             entity.HasOne(d => d.Payment).WithMany(p => p.Orders)
                 .HasForeignKey(d => d.PaymentId)
-                .OnDelete(DeleteBehavior.Cascade) // Изменено на каскадное удаление
+                .OnDelete(DeleteBehavior.Cascade) 
                 .HasConstraintName("FK__orders__payment___6EF57B66");
 
             entity.HasOne(d => d.Review).WithMany(p => p.Orders)
@@ -88,7 +88,7 @@ public partial class JapanTuneContext : DbContext
 
             entity.HasOne(d => d.User).WithMany(p => p.Orders)
                 .HasForeignKey(d => d.UserId)
-                .OnDelete(DeleteBehavior.Cascade) // Изменено на каскадное удаление
+                .OnDelete(DeleteBehavior.Cascade) 
                 .HasConstraintName("FK__orders__user_id__6FE99F9F");
         });
 
@@ -102,7 +102,7 @@ public partial class JapanTuneContext : DbContext
 
             entity.HasOne(d => d.User).WithMany(p => p.Payments)
                 .HasForeignKey(d => d.UserId)
-                .OnDelete(DeleteBehavior.Cascade) // Изменено на каскадное удаление
+                .OnDelete(DeleteBehavior.Cascade) 
                 .HasConstraintName("FK__payment__user_id__59FA5E80");
         });
 
@@ -116,7 +116,7 @@ public partial class JapanTuneContext : DbContext
 
             entity.HasOne(d => d.User).WithMany(p => p.Reviews)
                 .HasForeignKey(d => d.UserId)
-                .OnDelete(DeleteBehavior.Cascade) // Изменено на каскадное удаление
+                .OnDelete(DeleteBehavior.Cascade) 
                 .HasConstraintName("FK__review__user_id__52593CB8");
         });
 

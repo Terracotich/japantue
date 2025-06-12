@@ -17,7 +17,6 @@ namespace japantune.Controllers
             _logger = logger;
         }
 
-        // GET: Cars
         public async Task<IActionResult> Index()
         {
             var cars = await _context.Cars
@@ -26,7 +25,6 @@ namespace japantune.Controllers
             return View(cars);
         }
 
-        // GET: Cars/Details/5
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null)
@@ -46,12 +44,10 @@ namespace japantune.Controllers
             return View(car);
         }
 
-        // GET: Cars/Create
         public IActionResult Create()
         {
             try
             {
-                // Убедимся, что есть пользователи в базе
                 if (!_context.Users.Any())
                 {
                     TempData["ErrorMessage"] = "No users available. Please create users first.";
@@ -74,7 +70,6 @@ namespace japantune.Controllers
             }
         }
 
-        // POST: Cars/Create
         [HttpPost]
         public async Task<IActionResult> Create(string mark, string model, int releaseDate, string licensePlate, int userId)
         {
@@ -92,7 +87,6 @@ namespace japantune.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        // GET: Cars/Edit/5
         [HttpGet]
         public async Task<IActionResult> Edit(int? id)
         {
@@ -107,7 +101,6 @@ namespace japantune.Controllers
                 return NotFound();
             }
 
-            // Загружаем список пользователей
             ViewBag.Users = new SelectList(
                 _context.Users.Select(u => new {
                     Id = u.Id,
@@ -118,20 +111,17 @@ namespace japantune.Controllers
             return View(car);
         }
 
-        // POST: Cars/Edit/5
         [HttpPost]
         public async Task<IActionResult> Edit(int id, string mark, string model, int releaseDate, string licensePlate, int userId)
         {
             try
             {
-                // Находим существующую машину
                 var existingCar = await _context.Cars.FindAsync(id);
                 if (existingCar == null)
                 {
                     return NotFound();
                 }
 
-                // Обновляем поля
                 existingCar.Mark = mark;
                 existingCar.Model = model;
                 existingCar.ReleaseDate = releaseDate;
@@ -151,7 +141,6 @@ namespace japantune.Controllers
             }
         }
 
-        // GET: Cars/Delete/5
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null)
@@ -171,7 +160,6 @@ namespace japantune.Controllers
             return View(car);
         }
 
-        // POST: Cars/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)

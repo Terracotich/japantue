@@ -15,13 +15,11 @@ namespace japantune.Controllers
             _logger = logger;
         }
 
-        // GET: Suppliers
         public async Task<IActionResult> Index()
         {
             return View(await _context.Suppliers.ToListAsync());
         }
 
-        // GET: Suppliers/Details/5
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null)
@@ -40,20 +38,17 @@ namespace japantune.Controllers
             return View(supplier);
         }
 
-        // GET: Suppliers/Create
         public IActionResult Create()
         {
             return View();
         }
 
-        // POST: Suppliers/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(string title, string country)
         {
             try
             {
-                // Валидация вручную (если нужно)
                 if (string.IsNullOrEmpty(title) || string.IsNullOrEmpty(country))
                 {
                     ModelState.AddModelError("", "Title and Country are required.");
@@ -78,7 +73,6 @@ namespace japantune.Controllers
             }
         }
 
-        // GET: Suppliers/Edit/5
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null)
@@ -94,7 +88,6 @@ namespace japantune.Controllers
             return View(supplier);
         }
 
-        // POST: Suppliers/Edit/5 (тоже параметры вместо модели)
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, string title, string country)
@@ -107,7 +100,6 @@ namespace japantune.Controllers
                     return NotFound();
                 }
 
-                // Обновляем поля
                 supplier.Title = title;
                 supplier.Country = country;
 
@@ -123,7 +115,6 @@ namespace japantune.Controllers
             }
         }
 
-        // GET: Suppliers/Delete/5
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null)
@@ -142,7 +133,6 @@ namespace japantune.Controllers
             return View(supplier);
         }
 
-        // POST: Suppliers/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)

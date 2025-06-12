@@ -13,7 +13,7 @@ public partial class Car
     public string Model { get; set; } = null!;
 
     [Range(1900, 2100, ErrorMessage = "Год выпуска должен быть между 1900 и 2100")]
-    public int ReleaseDate { get; set; } // Просто год (число)
+    public int ReleaseDate { get; set; } 
 
     public string? LicensePlate { get; set; }
 
